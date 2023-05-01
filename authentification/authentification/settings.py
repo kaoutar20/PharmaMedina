@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'account.apps.AccountConfig',
+    "anymail",
 ]
 
 MIDDLEWARE = [
@@ -116,3 +117,10 @@ STATIC_ROOT = BASE_DIR / "static_cdn"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# 
+EMAIL_BACKEND = "anymail.backends.sendinblue.EmailBackend"
+ANYMAIL = {
+    "SENDINBLUE_API_KEY": "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",
+}

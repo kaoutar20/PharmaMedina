@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
+from django.core.mail import EmailMessage
 # Create your views here.
 
 def sing_in(request):
@@ -80,3 +81,50 @@ def dashboard(request):
 def log_out(request):
     logout(request)
     return redirect('sing_in')
+
+
+def forgot_password(request):
+    error = False
+    success = False
+    message = ""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        user = User.objects.filter(email=email).first()
+        if user:
+            print("processing forgot password")
+            html = """
+                <p> Hello, merci de cliquer pour modifier votre email </p>
+            """
+
+            msg = EmailMessage(
+                "Modification de mot de pass!",
+                html,
+                "soroib0879@gmail.com",
+                ["soro4827@gmail.com"],
+            )
+
+            msg.content_subtype = 'html'
+            msg.send()
+            
+            message = "processing forgot password"
+            success = True
+        else:
+            print("user does not exist")
+            error = True
+            message = "user does not exist"
+    
+    context = {
+        'success': success,
+        'error':error,
+        'message':message
+    }
+    return render(request, "forgot_password.html", context)
+
+
+def update_password(request):
+    return render(request, "update_password.html", {})
+
+
+
+
+
