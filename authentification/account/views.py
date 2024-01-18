@@ -5,91 +5,116 @@ from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import EmailMessage
+from django.contrib import messages
+from account.models import CustomUser
+from django.views.decorators.csrf import csrf_protect
+
+
 # Create your views here.
 
+@csrf_protect
 def sing_in(request):
+    error_message = None
 
     if request.method == "POST":
         email = request.POST.get('email', None)
         password = request.POST.get('password', None)
 
-        user = User.objects.filter(email=email).first()
+        user = CustomUser.objects.filter(email=email).first()
         if user:
             auth_user = authenticate(username=user.username, password=password)
             if auth_user:
                 login(request, auth_user)
-                return redirect('dashboard')
+                return redirect('dashboard')  # Redirect to the appropriate dashboard
             else:
-                print("mot de pass incorrecte")
+                error_message = "Mot de passe incorrect"
         else:
-            print("User does not exist")
+            error_message = "L'utilisateur n'existe pas"
 
-    return render(request, 'login.html', {})
+    return render(request, 'login.html', {'error_message': error_message})
+
+# views.py
+from account.models import CustomUser
+from django.core.exceptions import ValidationError
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
 
 def sing_up(request):
     error = False
     message = ""
+
     if request.method == "POST":
         name = request.POST.get('name', None)
         email = request.POST.get('email', None)
         password = request.POST.get('password', None)
         repassword = request.POST.get('repassword', None)
-        # Email
+        role = request.POST.get('role', None)
+
+        # Validate email
         try:
             validate_email(email)
-        except:
+        except ValidationError:
             error = True
             message = "Enter un email valide svp!"
-        # password
+
+        # Validate password
         if error == False:
             if password != repassword:
                 error = True
-                message = "Les deux mot de passe ne correspondent pas!"
-        # Exist
-        user = User.objects.filter(Q(email=email) | Q(username=name)).first()
+                message = "Les deux mots de passe ne correspondent pas!"
+
+        # Check if user exists
+        user = CustomUser.objects.filter(Q(email=email) | Q(username=name)).first()
         if user:
             error = True
-            message = f"Un utilisateur avec email {email} ou le nom d'utilisateur {name} exist déjà'!"
-        
-        # register
+            message = f"Un utilisateur avec l'email {email} ou le nom d'utilisateur {name} existe déjà!"
+
+        # Register user
         if error == False:
-            user = User(
-                username = name,
-                email = email,
+            user = CustomUser(
+                username=name,
+                email=email,
+                role=role,
             )
+            user.set_password(password)
             user.save()
 
-            user.password = password
-            user.set_password(user.password)
-            user.save()
+            # Log in the user after registration
+            auth_user = authenticate(username=user.username, password=password)
+            login(request, auth_user)
 
             return redirect('sing_in')
 
-            #print("=="*5, " NEW POST: ",name,email, password, repassword, "=="*5)
-
     context = {
-        'error':error,
-        'message':message
+        'error': error,
+        'message': message,
     }
     return render(request, 'register.html', context)
 
 
 @login_required(login_url='sing_in')
 def dashboard(request):
-    return render(request, 'admin.html', {})
+    # Check the user's role and render the appropriate template
+    if request.user.role == 'pharmacy':
+        template_name = 'pharmacy_dashboard.html'
+    elif request.user.role == 'factory':
+        template_name = 'factory_dashboard.html'
+    else:
+        # Default dashboard for other user roles
+        template_name = 'admin.html'
+
+    return render(request, f'{template_name}', {})
 
 def log_out(request):
     logout(request)
     return redirect('sing_in')
-
-
 def forgot_password(request):
     error = False
     success = False
     message = ""
     if request.method == 'POST':
         email = request.POST.get('email')
-        user = User.objects.filter(email=email).first()
+        user = CustomUser.objects.filter(email=email).first()
         if user:
             print("processing forgot password")
             html = """
@@ -115,11 +140,10 @@ def forgot_password(request):
     
     context = {
         'success': success,
-        'error':error,
-        'message':message
+        'error': error,
+        'message': message
     }
     return render(request, "forgot_password.html", context)
-
 
 def update_password(request):
     return render(request, "update_password.html", {})
