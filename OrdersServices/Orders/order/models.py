@@ -1,7 +1,7 @@
 from django.db import models
 
 # Create your models here.
-class Produts(models.Model):
+class Orders(models.Model):
     STATUS_CHOICES = [
         ('En attente', 'En attente'),
         ('En cours de traitement', 'En cours de traitement'),
