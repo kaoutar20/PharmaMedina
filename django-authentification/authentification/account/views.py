@@ -96,9 +96,10 @@ def sing_up(request):
 def dashboard(request):
     # Check the user's role and render the appropriate template
     if request.user.role == 'pharmacy':
-        template_name = 'pharmacy_dashboard.html'
+        #template_name = 'pharmacy_dashboard.html'
+        return redirect('http://localhost:3000')
     elif request.user.role == 'factory':
-        template_name = 'factory_dashboard.html'
+        return redirect('https://store-byxgi1zg.saleor.cloud/dashboard/')
     else:
         # Default dashboard for other user roles
         template_name = 'admin.html'
@@ -147,6 +148,17 @@ def forgot_password(request):
 
 def update_password(request):
     return render(request, "update_password.html", {})
+
+
+#ajouté
+from django.http import JsonResponse
+from .models import CustomUser
+
+def user_list(request):
+    users = CustomUser.objects.all()
+    data = [{'username': user.username, 'email': user.email} for user in users]
+    return JsonResponse(data, safe=False)
+
 
 
 
