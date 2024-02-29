@@ -3,7 +3,7 @@ from django.urls import path, include
 
 from account.views import (
     sing_in, sing_up, dashboard, log_out,
-    forgot_password, update_password,user_list
+    forgot_password, update_password,user_list,user_detail
 )
 urlpatterns = [
     #path('', dashboard, name='dashboard'),
@@ -15,4 +15,5 @@ urlpatterns = [
     path('forgot-password', forgot_password, name='forgot_password'),
     path('update-password', update_password, name='update_password'),
     path('api/users/', user_list, name='user_list'),
+    path('api/users/<int:user_id>/', user_detail, name='user_detail'),
 ]

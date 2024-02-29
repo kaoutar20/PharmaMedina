@@ -8,6 +8,7 @@ from django.core.mail import EmailMessage
 from django.contrib import messages
 from account.models import CustomUser
 from django.views.decorators.csrf import csrf_protect
+from django.http import JsonResponse
 
 
 # Create your views here.
@@ -150,13 +151,25 @@ def update_password(request):
     return render(request, "update_password.html", {})
 
 
-from django.http import JsonResponse
-from .models import CustomUser
+
 
 def user_list(request):
     users = CustomUser.objects.all()
     data = [{'id': user.id, 'username': user.username, 'email': user.email} for user in users]
     return JsonResponse(data, safe=False)
+
+def user_detail(request, user_id):
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            # Ajoutez d'autres champs utilisateur ici si nécessaire
+        }
+        return JsonResponse(data)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'error': 'Utilisateur non trouvé'}, status=404)
 
 
 
