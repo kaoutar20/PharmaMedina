@@ -150,14 +150,14 @@ def update_password(request):
     return render(request, "update_password.html", {})
 
 
-#ajouté
 from django.http import JsonResponse
 from .models import CustomUser
 
 def user_list(request):
     users = CustomUser.objects.all()
-    data = [{'username': user.username, 'email': user.email} for user in users]
+    data = [{'id': user.id, 'username': user.username, 'email': user.email} for user in users]
     return JsonResponse(data, safe=False)
+
 
 
 
