@@ -11,27 +11,35 @@ class OrderListCreateView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
 
     def list(self, request, *args, **kwargs):
-        # Manipulation des produits récupérés, par exemple, les ajouter à la réponse de la commande
         orders = self.get_queryset()
         serializer = self.get_serializer(orders, many=True)
-        response_data = {"orders": serializer.data}
-        return Response(response_data)
-    
+        return Response(serializer.data)
+
     def post(self, request, *args, **kwargs):
         serializer = OrderSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+
 class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Orders.objects.all()
     serializer_class = OrderSerializer
 
     def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        instance = self.get_object()
+        instance.delete()
+        return Response({'message': 'Order deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
