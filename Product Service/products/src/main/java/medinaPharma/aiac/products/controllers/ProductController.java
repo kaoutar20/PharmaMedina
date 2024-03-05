@@ -1,6 +1,8 @@
 package medinaPharma.aiac.products.controllers;
 
 import jakarta.validation.Valid;
+import medinaPharma.aiac.products.Config.EnqueueDequeService;
+import medinaPharma.aiac.products.Producer.ProductProducer;
 import medinaPharma.aiac.products.dto.ProductDto;
 import medinaPharma.aiac.products.service.facade.ProductService;
 import org.springframework.http.HttpStatus;
@@ -13,9 +15,14 @@ import java.util.List;
 @RestController
 @RequestMapping("products")
 public class ProductController {
-    private ProductService productService;
-    public ProductController(ProductService productService){
+    private final ProductService productService;
+    private final EnqueueDequeService enqueueDequeService;
+    private final ProductProducer productProducer;
+
+    public ProductController(ProductService productService, EnqueueDequeService enqueueDequeService, ProductProducer productProducer){
         this.productService = productService;
+        this.enqueueDequeService = enqueueDequeService;
+        this.productProducer = productProducer;
     }
 
     @GetMapping("")
@@ -46,6 +53,8 @@ public class ProductController {
     @PostMapping("")
     public ResponseEntity<ProductDto> save(@Valid @RequestBody() ProductDto productDto){
         ProductDto saved = productService.save(productDto);
+        // Publier le produit ajouté dans la file d'attente RabbitMQ
+        enqueueDequeService.publishProduct(saved);
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 

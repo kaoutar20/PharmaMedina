@@ -1,11 +1,14 @@
 package medinaPharma.aiac.products.service.impl;
 
+import medinaPharma.aiac.products.Producer.ProductProducer;
 import medinaPharma.aiac.products.dao.ProductDao;
 import medinaPharma.aiac.products.dto.ProductDto;
 import medinaPharma.aiac.products.exception.handler.EntityNotFoundException;
 import medinaPharma.aiac.products.models.ProductEntity;
 import medinaPharma.aiac.products.service.facade.ProductService;
 import org.modelmapper.ModelMapper;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,12 +19,14 @@ import java.util.stream.Collectors;
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    private ProductDao productDao;
-    private ModelMapper modelMapper;
+    private final ProductDao productDao;
+    private final ModelMapper modelMapper;
+    private final ProductProducer productProducer;
 
-    public ProductServiceImpl(ProductDao productDao, ModelMapper modelMapper) {
+    public ProductServiceImpl(ProductDao productDao, ModelMapper modelMapper, ProductProducer productProducer) {
         this.productDao = productDao;
         this.modelMapper = modelMapper;
+        this.productProducer = productProducer;
     }
 
     @Override
@@ -33,8 +38,15 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDto findById(Integer id) {
-        Optional<ProductEntity> productEntity = productDao.findById(id);
-        return modelMapper.map(productEntity, ProductDto.class);
+        Optional<ProductEntity> productEntityOptional = productDao.findById(id);
+        if(productEntityOptional.isPresent()){
+            ProductEntity productEntity = productEntityOptional.get();
+            ProductDto productDto = modelMapper.map(productEntity, ProductDto.class);
+            productProducer.sendProductMessage(productDto); // Envoi du produit à RabbitMQ
+            return productDto;
+        } else {
+            throw new EntityNotFoundException("Product Not Found");
+        }
     }
 
     @Override
@@ -88,4 +100,7 @@ public class ProductServiceImpl implements ProductService {
             throw new EntityNotFoundException("Product Not Found");
         }
     }
+
 }
+
+

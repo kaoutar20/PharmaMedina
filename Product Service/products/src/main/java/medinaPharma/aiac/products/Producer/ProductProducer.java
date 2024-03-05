@@ -3,31 +3,34 @@ package medinaPharma.aiac.products.Producer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import medinaPharma.aiac.products.dto.ProductDto;
-import medinaPharma.aiac.products.exception.handler.EntityNotFoundException;
-import medinaPharma.aiac.products.service.facade.ProductService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ProductProducer {
 
-    @Autowired
-    private ProductService productService;
+    private final AmqpTemplate amqpTemplate;
+    private final ObjectMapper objectMapper; // Ajout de ObjectMapper
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Value("${rabbitmq.exchange}")
+    private String exchange;
 
-    public String getProductJsonById(Integer productId) {
-        try {
-            ProductDto product = productService.findById(productId);
-            return objectMapper.writeValueAsString(product);
-        } catch (EntityNotFoundException e) {
-            System.out.println("Le produit avec l'ID " + productId + " n'a pas été trouvé.");
-            return null;
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return null;
-        }
+    @Value("${rabbitmq.routingkey}")
+    private String routingkey;
+
+    public ProductProducer(AmqpTemplate amqpTemplate, ObjectMapper objectMapper) {
+        this.amqpTemplate = amqpTemplate;
+        this.objectMapper = objectMapper; // Injection de ObjectMapper
     }
 
+    public void sendProductMessage(ProductDto productDto) {
+        try {
+            String jsonProduct = objectMapper.writeValueAsString(productDto); // Conversion en JSON
+            amqpTemplate.convertAndSend(exchange, routingkey, jsonProduct);
+            System.out.println("Produit envoyé avec succès à RabbitMQ: " + jsonProduct);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace(); // Gérer l'erreur de conversion en JSON
+        }
+    }
 }
